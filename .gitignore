@@ -1,0 +1,7 @@
+*.egg-info/*
+*.pyc
+.mypy_cache/*
+.tox/*
+/build
+/env
+TAGS
