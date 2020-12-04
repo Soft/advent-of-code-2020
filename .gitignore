@@ -3,5 +3,6 @@
 .mypy_cache/*
 .tox/*
 /build
+/dist
 /env
 TAGS
