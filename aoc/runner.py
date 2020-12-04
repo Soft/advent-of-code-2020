@@ -17,7 +17,7 @@ class Solution:
 
     @property
     def day(self):
-        return int(re.match(r"^day(\d+)$", self._module_info.name).group(1))
+        return int(re.fullmatch(r"day(\d+)", self._module_info.name).group(1))
 
     def part(self, i):
         try:

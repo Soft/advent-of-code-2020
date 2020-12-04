@@ -2,7 +2,7 @@ import re
 
 
 def parse_line(line):
-    match = re.match(r"^(\d+)\-(\d+) (.): (.+)$", line)
+    match = re.fullmatch(r"(\d+)\-(\d+) (.): (.+)", line)
     return (
         int(match.group(1)),
         int(match.group(2)),
