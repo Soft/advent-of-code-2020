@@ -1,13 +1,13 @@
 def lower_half(start, end):
     assert start < end
     offset = (end - start) // 2
-    return (start, start + offset)
+    return start, start + offset
 
 
 def upper_half(start, end):
     assert start < end
     offset = (end - start) // 2
-    return (start + offset + 1, end)
+    return start + offset + 1, end
 
 
 def traverse(input, lower, upper, start, end):
@@ -48,12 +48,15 @@ def sliding_pairs(iterable):
     iterator = iter(iterable)
     prev = next(iterator)
     for item in iterator:
-        yield (prev, item)
+        yield prev, item
         prev = item
 
 
 def part_2(input):
-    for a, b in sliding_pairs(sorted(map(seat, input.splitlines()))):
-        if a + 1 != b:
-            print(a + 1)
-            return
+    print(
+        next(
+            a + 1
+            for a, b in sliding_pairs(sorted(map(seat, input.splitlines())))
+            if a + 1 != b
+        )
+    )
