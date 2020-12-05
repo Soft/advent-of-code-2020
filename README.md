@@ -1,6 +1,6 @@
 # Advent of Code 2020 in Python 🎅
 
-My solutions for [Advent of Code 2020](https://adventofcode.com/2020) in Python language.
+My solutions for [Advent of Code 2020](https://adventofcode.com/2020) in Python.
 
 ## Usage
 
