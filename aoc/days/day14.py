@@ -18,12 +18,6 @@ class Mask:
     value: str
 
 
-def parse_mask(value):
-    and_mask = int(re.sub("X", "1", value), 2)
-    or_mask = int(re.sub("X", "0", value), 2)
-    return and_mask, or_mask
-
-
 def instructions(input):
     for line in input.splitlines():
         mask = MASK_RE.fullmatch(line)
@@ -41,12 +35,10 @@ def evaluate1(instructions):
     mem = {}
     for instruction in instructions:
         if isinstance(instruction, Mask):
-            and_mask, or_mask = parse_mask(instruction.value)
+            and_mask = int(instruction.value.replace("X", "1"), 2)
+            or_mask = int(instruction.value.replace("X", "0"), 2)
         elif isinstance(instruction, Store):
-            value = instruction.value
-            value &= and_mask
-            value |= or_mask
-            mem[instruction.address] = value
+            mem[instruction.address] = instruction.value & and_mask | or_mask
         else:
             assert False
     return mem
@@ -70,12 +62,9 @@ def expand_floating_masks(mask):
 
 
 def decode_address(mask, address):
-    address |= int(re.sub("X", "0", mask), 2)
+    address |= int(mask.replace("X", "0"), 2)
     for and_mask, or_mask in expand_floating_masks(mask):
-        addr = address
-        addr &= and_mask
-        addr |= or_mask
-        yield addr
+        yield address & and_mask | or_mask
 
 
 def evaluate2(instructions):
