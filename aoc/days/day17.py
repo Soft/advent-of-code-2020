@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import partial
-from itertools import product, starmap
+from itertools import product, starmap, islice, count
 from operator import add
 
 OFFSETS_3D = frozenset(product((-1, 0, 1), repeat=3))
@@ -48,26 +48,27 @@ def step(perimeter, world):
     return next
 
 
-def simulate(world, step, steps=6):
-    current = world
-    for _ in range(steps):
-        current = step(current)
-    return current
-
-
 def active(world):
     return sum(world[pos] for pos in world)
+
+
+def iterate(fn, value):
+    return (value := fn(value) for _ in count())
+
+
+def nth(iter, n):
+    return next(islice(iter, n - 1, n))
 
 
 def part_1(input):
     world = parse(input)
     perimeter_3d = partial(perimeter, OFFSETS_3D)
     step_3d = partial(step, perimeter_3d)
-    print(active(simulate(world, step_3d)))
+    print(active(nth(iterate(step_3d, world), 6)))
 
 
 def part_2(input):
     world = parse(input, dim=4)
     perimeter_4d = partial(perimeter, OFFSETS_4D)
     step_4d = partial(step, perimeter_4d)
-    print(active(simulate(world, step_4d)))
+    print(active(nth(iterate(step_4d, world), 6)))
