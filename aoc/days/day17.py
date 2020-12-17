@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import partial
 from itertools import product, starmap
 from operator import add
 
@@ -14,27 +15,30 @@ def pad(source, size):
 
 
 def parse(input, dim=3):
-    world = defaultdict(lambda: False)
-    for y, row in enumerate(input.splitlines()):
-        for x, col in enumerate(row):
-            if col == "#":
-                world[pad((x, y), dim)] = True
-    return world
+    return defaultdict(
+        lambda: False,
+        (
+            (pad((x, y), dim), True)
+            for y, row in enumerate(input.splitlines())
+            for x, col in enumerate(row)
+            if col == "#"
+        ),
+    )
 
 
-def perimeter(pos, *, offsets=OFFSETS_3D):
+def perimeter(offsets, pos):
     yield from (tuple(starmap(add, zip(pos, off))) for off in offsets)
 
 
-def neighbors(pos, *, offsets=OFFSETS_3D):
-    yield from (p for p in perimeter(pos, offsets=offsets) if p != pos)
+def neighbors(perimeter, pos):
+    yield from (p for p in perimeter(pos) if p != pos)
 
 
-def step(world, offsets=OFFSETS_3D):
+def step(perimeter, world):
     next = world.copy()
-    cells = {c for pos in world for c in perimeter(pos, offsets=offsets)}
+    cells = {c for pos in world for c in perimeter(pos)}
     for cell in cells:
-        active_neighbors = sum(world[pos] for pos in neighbors(cell, offsets=offsets))
+        active_neighbors = sum(world[pos] for pos in neighbors(perimeter, cell))
         if world[cell]:
             if active_neighbors not in (2, 3):
                 next[cell] = False
@@ -44,10 +48,10 @@ def step(world, offsets=OFFSETS_3D):
     return next
 
 
-def simulate(world, offsets=OFFSETS_3D, steps=6):
+def simulate(world, step, steps=6):
     current = world
     for _ in range(steps):
-        current = step(current, offsets=offsets)
+        current = step(current)
     return current
 
 
@@ -57,9 +61,13 @@ def active(world):
 
 def part_1(input):
     world = parse(input)
-    print(active(simulate(world)))
+    perimeter_3d = partial(perimeter, OFFSETS_3D)
+    step_3d = partial(step, perimeter_3d)
+    print(active(simulate(world, step_3d)))
 
 
 def part_2(input):
     world = parse(input, dim=4)
-    print(active(simulate(world, OFFSETS_4D)))
+    perimeter_4d = partial(perimeter, OFFSETS_4D)
+    step_4d = partial(step, perimeter_4d)
+    print(active(simulate(world, step_4d)))
