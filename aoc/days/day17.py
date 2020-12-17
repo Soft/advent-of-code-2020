@@ -3,8 +3,8 @@ from functools import partial
 from itertools import product, starmap
 from operator import add
 
-OFFSETS_3D = frozenset(off for off in product((-1, 0, 1), repeat=3))
-OFFSETS_4D = frozenset(off for off in product((-1, 0, 1), repeat=4))
+OFFSETS_3D = frozenset(product((-1, 0, 1), repeat=3))
+OFFSETS_4D = frozenset(product((-1, 0, 1), repeat=4))
 
 
 def pad(source, size):
@@ -27,11 +27,11 @@ def parse(input, dim=3):
 
 
 def perimeter(offsets, pos):
-    yield from (tuple(starmap(add, zip(pos, off))) for off in offsets)
+    return (tuple(starmap(add, zip(pos, off))) for off in offsets)
 
 
 def neighbors(perimeter, pos):
-    yield from (p for p in perimeter(pos) if p != pos)
+    return (p for p in perimeter(pos) if p != pos)
 
 
 def step(perimeter, world):
