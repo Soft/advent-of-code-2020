@@ -1,34 +1,66 @@
+from dataclasses import dataclass
+from functools import partial
 from operator import add, mul
+from typing import Callable, List
 
 
-def evaluate(expression, subexpr=False):
-    chars = iter(expression)
-    acc = None
-    operator = None
-    for c in chars:
+@dataclass
+class Operator:
+    precedence: int
+    fn: Callable[[List[int]], None]
+
+
+def stackfn(fn):
+    def wrap(queue):
+        assert len(queue) >= 2
+        queue.append(fn(queue.pop(), queue.pop()))
+
+    return wrap
+
+
+def evaluate(operators, expression):
+    output = []
+    operator = []
+    for c in expression:
         if c.isspace():
             continue
-        elif c.isdigit() and acc is None:
-            acc = int(c)
-        elif c.isdigit() and operator is not None:
-            acc = operator(acc, int(c))
-            operator = None
-        elif c == "+" and operator is None and acc is not None:
-            operator = add
-        elif c == "*" and operator is None and acc is not None:
-            operator = mul
-        elif c == "(" and acc is None:
-            acc = evaluate(chars, True)
-        elif c == "(" and operator is not None:
-            acc = operator(acc, evaluate(chars, True))
-            operator = None
-        elif c == ")" and subexpr:
-            return acc
+        elif c.isdigit():
+            output.append(int(c))
+        elif c in operators:
+            while (
+                operator
+                and operator[-1] != "("
+                and operators[operator[-1]].precedence >= operators[c].precedence
+            ):
+                operators[operator.pop()].fn(output)
+            operator.append(c)
+        elif c == "(":
+            operator.append(c)
+        elif c == ")":
+            while operator[-1] != "(":
+                operators[operator.pop()].fn(output)
+            if operator[-1] == "(":
+                operator.pop()
         else:
             assert False
-    assert operator is None and acc is not None
-    return acc
+    while operator:
+        operators[operator.pop()].fn(output)
+    return output[0]
 
 
 def part_1(input):
-    print(sum(map(evaluate, input.splitlines())))
+    operators = {
+        "+": Operator(1, stackfn(add)),
+        "*": Operator(1, stackfn(mul)),
+    }
+    evaluate_ = partial(evaluate, operators)
+    print(sum(map(evaluate_, input.splitlines())))
+
+
+def part_2(input):
+    operators = {
+        "+": Operator(2, stackfn(add)),
+        "*": Operator(1, stackfn(mul)),
+    }
+    evaluate_ = partial(evaluate, operators)
+    print(sum(map(evaluate_, input.splitlines())))
