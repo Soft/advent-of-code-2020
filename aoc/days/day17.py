@@ -40,7 +40,7 @@ def step(perimeter, world):
     for cell in cells:
         active_neighbors = sum(world[pos] for pos in neighbors(perimeter, cell))
         if world[cell]:
-            if active_neighbors not in (2, 3):
+            if active_neighbors not in {2, 3}:
                 next[cell] = False
         else:
             if active_neighbors == 3:
