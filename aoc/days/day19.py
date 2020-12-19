@@ -3,14 +3,19 @@ from itertools import takewhile
 from functools import partial
 
 LIT_RE = re.compile(r"(\d+): \"(.)\"")
-ALIAS_RE = re.compile(r"(\d+): (\d+)")
-SEQ_RE = re.compile(r"(\d+): (\d+) (\d+)")
-ALT1_RE = re.compile(r"(\d+): (\d+) \| (\d+)")
-ALT2_RE = re.compile(r"(\d+): (\d+) (\d+) \| (\d+) (\d+)")
+SEQ_RE = re.compile(r"(\d+): ((?:\d+)(?: (?:\d+))*)")
+ALT_RE = re.compile(r"(\d+): ((?:\d+)(?: (?:\d+))*) \| ((?:\d+)(?: (?:\d+))*)")
 
 
 def identity(n):
     return n
+
+
+def ref(rules, i):
+    def matcher(s):
+        return rules[i](s)
+
+    return matcher
 
 
 def literal(c):
@@ -21,80 +26,48 @@ def literal(c):
     return matcher
 
 
-def alias(rules, r):
+def seq(*rs):
     def matcher(s):
-        return rules[r](s)
+        for r in rs:
+            if (s := r(s)) is None:
+                break
+        return s
 
     return matcher
 
 
-def seq(rules, r1, r2):
+def alt(ra, rb):
     def matcher(s):
-        if (s := rules[r1](s)) is not None:
-            return rules[r2](s)
-
-    return matcher
-
-
-def alt1(rules, ra, rb):
-    def matcher(s):
-        if (s1 := rules[ra](s)) is not None:
+        if (s1 := ra(s)) is not None:
             return s1
-        if (s1 := rules[rb](s)) is not None:
+        if (s1 := rb(s)) is not None:
             return s1
-
-    return matcher
-
-
-def alt2(rules, ra1, ra2, rb1, rb2):
-    def matcher(s):
-        if (s1 := rules[ra1](s)) is not None and (
-            s2 := rules[ra2](s1)
-        ) is not None:
-            return s2
-        if (s1 := rules[rb1](s)) is not None and (
-            s2 := rules[rb2](s1)
-        ) is not None:
-            return s2
 
     return matcher
 
 
 def parse_rule(rules, line):
+    def parse_seq(s):
+        return seq(*(ref(rules, int(r)) for r in s.split(" ")))
+
     if (match := LIT_RE.fullmatch(line)) is not None:
         return int(match.group(1)), literal(match.group(2))
-    elif (match := ALIAS_RE.fullmatch(line)) is not None:
-        return int(match.group(1)), alias(rules, int(match.group(2)))
     elif (match := SEQ_RE.fullmatch(line)) is not None:
         return (
             int(match.group(1)),
-            seq(rules, int(match.group(2)), int(match.group(3))),
+            parse_seq(match.group(2)),
         )
-    elif (match := ALT1_RE.fullmatch(line)) is not None:
+    elif (match := ALT_RE.fullmatch(line)) is not None:
         return (
             int(match.group(1)),
-            alt1(rules, int(match.group(2)), int(match.group(3))),
+            alt(parse_seq(match.group(2)), parse_seq(match.group(3)),),
         )
-    elif (match := ALT2_RE.fullmatch(line)) is not None:
-        return (
-            int(match.group(1)),
-            alt2(
-                rules,
-                int(match.group(2)),
-                int(match.group(3)),
-                int(match.group(4)),
-                int(match.group(5)),
-            ),
-        )
-    else:
-        assert False
+    assert False
 
 
 def parse_rules(lines):
     rules = {}
-    rules.update(
-        parse_rule(rules, line) for line in takewhile(identity, lines)
-    )
+    rules.update(parse_rule(rules, line) for line in takewhile(identity, lines))
     return rules
 
 
