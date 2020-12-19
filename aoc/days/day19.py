@@ -1,6 +1,6 @@
 import re
 from itertools import takewhile
-from functools import partial
+from functools import partial, reduce
 
 LIT_RE = re.compile(r"(\d+): \"(.)\"")
 SEQ_RE = re.compile(r"(\d+): ((?:\d+)(?: (?:\d+))*)")
@@ -21,27 +21,34 @@ def ref(rules, i):
 def literal(c):
     def matcher(s):
         if len(s) >= 1 and s[0] == c:
-            return s[1:]
+            return {s[1:]}
+        return set()
+
+    return matcher
+
+
+def seq2(r1, r2):
+    def matcher(s):
+        matches = set()
+        for s1 in r1(s):
+            matches.update(r2(s1))
+        return matches
 
     return matcher
 
 
 def seq(*rs):
+    r = reduce(seq2, rs)
+
     def matcher(s):
-        for r in rs:
-            if (s := r(s)) is None:
-                break
-        return s
+        return r(s)
 
     return matcher
 
 
 def alt(ra, rb):
     def matcher(s):
-        if (s1 := ra(s)) is not None:
-            return s1
-        if (s1 := rb(s)) is not None:
-            return s1
+        return {*ra(s), *rb(s)}
 
     return matcher
 
@@ -78,10 +85,18 @@ def parse(input):
 
 
 def match(matcher, s):
-    return matcher(s) == ""
+    return "" in matcher(s)
 
 
 def part_1(input):
     rules, messages = parse(input)
+    matcher = partial(match, rules[0])
+    print(sum(map(matcher, messages)))
+
+
+def part_2(input):
+    rules, messages = parse(input)
+    rules.update({parse_rule(rules, "8: 42 | 42 8")})
+    rules.update({parse_rule(rules, "11: 42 31 | 42 11 31")})
     matcher = partial(match, rules[0])
     print(sum(map(matcher, messages)))
