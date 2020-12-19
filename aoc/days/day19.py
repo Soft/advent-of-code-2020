@@ -38,12 +38,7 @@ def seq2(r1, r2):
 
 
 def seq(*rs):
-    r = reduce(seq2, rs)
-
-    def matcher(s):
-        return r(s)
-
-    return matcher
+    return reduce(seq2, rs)
 
 
 def alt(ra, rb):
