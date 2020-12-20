@@ -3,11 +3,16 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import reduce
-from itertools import takewhile
+from itertools import takewhile, count, chain
 from operator import itemgetter, mul
 from typing import Tuple
 
 TITLE_RE = re.compile(r"Tile (\d+):")
+SEA_MONSTER = (
+    "                  # ",
+    "#    ##    ##    ###",
+    " #  #  #  #  #  #   ",
+)
 
 
 @dataclass
@@ -23,6 +28,7 @@ class Tile:
     right: Tuple[str]
     bottom: Tuple[str]
     left: Tuple[str]
+    tile: Tuple[Tuple[str]]
 
 
 class Border(Enum):
@@ -97,7 +103,7 @@ def build_edge_dict(tiles):
         for rot in rotations(raw_tile.tile):
             for flip in flips(rot):
                 top, right, bottom, left = edges(flip)
-                tile = Tile(raw_tile.id, top, right, bottom, left)
+                tile = Tile(raw_tile.id, top, right, bottom, left, flip)
                 edgedict[(Border.TOP, top)].append(tile)
                 edgedict[(Border.RIGHT, right)].append(tile)
                 edgedict[(Border.BOTTOM, bottom)].append(tile)
@@ -120,7 +126,7 @@ def construct(tiles):
         if tile.id in used:
             return
         used.add(tile.id)
-        placed[(x, y)] = tile.id
+        placed[(x, y)] = tile
 
         for border, edge in zip(
             Border, (tile.top, tile.right, tile.bottom, tile.left)
@@ -143,11 +149,16 @@ def construct(tiles):
     return placed
 
 
-def corners(placed):
+def bounds(placed):
     min_x, _ = min(placed, key=itemgetter(0))
     max_x, _ = max(placed, key=itemgetter(0))
     _, min_y = min(placed, key=itemgetter(1))
     _, max_y = max(placed, key=itemgetter(1))
+    return min_x, min_y, max_x, max_y
+
+
+def corners(placed):
+    min_x, min_y, max_x, max_y = bounds(placed)
     nw = placed[(min_x, min_y)]
     ne = placed[(max_x, min_y)]
     se = placed[(max_x, max_y)]
@@ -160,5 +171,82 @@ def prod(iter):
 
 
 def part_1(input):
-    tiles = list(parse(input))
-    print(prod(corners(construct(tiles))))
+    print(prod(tile.id for tile in corners(construct(parse(input)))))
+
+
+def trim(tile):
+    return tuple(row[1:-1] for row in tile[1:-1])
+
+
+def reorder(tiles):
+    min_x, min_y, max_x, max_y = bounds(tiles)
+    return (
+        (tiles[(x, y)] for x in takewhile(lambda n: n <= max_x, count(min_x)))
+        for y in takewhile(lambda n: n <= max_y, count(min_y))
+    )
+
+
+def merge(tiles):
+    return tuple(
+        tuple(chain(*row)) for tile_row in tiles for row in zip(*tile_row)
+    )
+
+
+def hash_count(tile):
+    return sum(col == "#" for row in tile for col in row)
+
+
+def sliding_windows(n, lst):
+    for i in range(0, len(lst) - n + 1):
+        yield lst[i : i + n]
+
+
+def fuzzy_match(pattern, string):
+    assert len(pattern) == len(string)
+    for p, c in zip(pattern, string):
+        if p == "#":
+            if c != "#":
+                return False
+    return True
+
+
+def multiline_match_count(pattern, lines):
+    matches = 0
+    if len(lines) < len(pattern):
+        return matches
+    first, *others = pattern
+    pattern_len = len(first)
+    for x, piece in enumerate(sliding_windows(pattern_len, lines[0])):
+        if fuzzy_match(first, piece):
+            for pattern, line in zip(others, lines[1:]):
+                if not fuzzy_match(pattern, line[x : x + pattern_len]):
+                    break
+            else:
+                matches += 1
+    return matches
+
+
+def pattern_count(pattern, tile):
+    return sum(
+        multiline_match_count(pattern, tile[row:]) for row in range(len(tile))
+    )
+
+
+def find_patterns(pattern, image):
+    for rot in rotations(image):
+        for flip in flips(rot):
+            if (matches := pattern_count(pattern, flip)) > 0:
+                return matches
+    return 0
+
+
+def part_2(input):
+    positions = construct(parse(input))
+    image = merge(
+        (trim(tile.tile) for tile in tile_row)
+        for tile_row in reorder(positions)
+    )
+    total_hashes = hash_count(image)
+    monster_hashes = hash_count(SEA_MONSTER)
+    monster_count = find_patterns(SEA_MONSTER, image)
+    print(total_hashes - monster_count * monster_hashes)
