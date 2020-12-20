@@ -84,37 +84,24 @@ def flip_v(tile):
     return tuple(reversed(tile))
 
 
+def flips(tile):
+    yield tile
+    yield flip_h(tile)
+    yield flip_v(tile)
+    yield flip_v(flip_h(tile))
+
+
 def build_edge_dict(tiles):
     edgedict = defaultdict(list)
     for raw_tile in tiles:
         for rot in rotations(raw_tile.tile):
-            top, right, bottom, left = edges(rot)
-            tile = Tile(raw_tile.id, top, right, bottom, left)
-            edgedict[(Border.TOP, top)].append(tile)
-            edgedict[(Border.RIGHT, right)].append(tile)
-            edgedict[(Border.BOTTOM, bottom)].append(tile)
-            edgedict[(Border.LEFT, left)].append(tile)
-
-            top, right, bottom, left = edges(flip_h(rot))
-            tile = Tile(raw_tile.id, top, right, bottom, left)
-            edgedict[(Border.TOP, top)].append(tile)
-            edgedict[(Border.RIGHT, right)].append(tile)
-            edgedict[(Border.BOTTOM, bottom)].append(tile)
-            edgedict[(Border.LEFT, left)].append(tile)
-
-            top, right, bottom, left = edges(flip_v(rot))
-            tile = Tile(raw_tile.id, top, right, bottom, left)
-            edgedict[(Border.TOP, top)].append(tile)
-            edgedict[(Border.RIGHT, right)].append(tile)
-            edgedict[(Border.BOTTOM, bottom)].append(tile)
-            edgedict[(Border.LEFT, left)].append(tile)
-
-            top, right, bottom, left = edges(flip_v(flip_h(rot)))
-            tile = Tile(raw_tile.id, top, right, bottom, left)
-            edgedict[(Border.TOP, top)].append(tile)
-            edgedict[(Border.RIGHT, right)].append(tile)
-            edgedict[(Border.BOTTOM, bottom)].append(tile)
-            edgedict[(Border.LEFT, left)].append(tile)
+            for flip in flips(rot):
+                top, right, bottom, left = edges(flip)
+                tile = Tile(raw_tile.id, top, right, bottom, left)
+                edgedict[(Border.TOP, top)].append(tile)
+                edgedict[(Border.RIGHT, right)].append(tile)
+                edgedict[(Border.BOTTOM, bottom)].append(tile)
+                edgedict[(Border.LEFT, left)].append(tile)
     return edgedict
 
 
@@ -125,7 +112,8 @@ def construct(tiles):
 
     def find_tile(border, edge):
         return next(
-            (tile for tile in edgedict[border, edge] if tile.id not in used), None,
+            (tile for tile in edgedict[border, edge] if tile.id not in used),
+            None,
         )
 
     def place_tile(tile, x, y):
@@ -134,7 +122,9 @@ def construct(tiles):
         used.add(tile.id)
         placed[(x, y)] = tile.id
 
-        for border, edge in zip(Border, (tile.top, tile.right, tile.bottom, tile.left)):
+        for border, edge in zip(
+            Border, (tile.top, tile.right, tile.bottom, tile.left)
+        ):
             if border is Border.TOP:
                 if (tile := find_tile(Border.BOTTOM, edge)) is not None:
                     place_tile(tile, x, y - 1)
