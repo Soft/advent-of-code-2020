@@ -34,3 +34,17 @@ def part_1(input):
     entries = list(parse(input))
     allergens = set(chain(*candidates(entries).values()))
     print(sum(v for k, v in occurences(entries).items() if k not in allergens))
+
+
+def part_2(input):
+    allergens = candidates(parse(input))
+    solved = {}
+    while allergens:
+        for allergen, ingredients in tuple(allergens.items()):
+            if len(ingredients) == 1:
+                ingredient = next(iter(ingredients))
+                solved[ingredient] = allergen
+                del allergens[allergen]
+                for ingredients in allergens.values():
+                    ingredients.discard(ingredient)
+    print(",".join(sorted(solved, key=lambda k: solved[k])))
