@@ -118,8 +118,7 @@ def construct(tiles):
 
     def find_tile(border, edge):
         return next(
-            (tile for tile in edgedict[border, edge] if tile.id not in used),
-            None,
+            (tile for tile in edgedict[border, edge] if tile.id not in used), None,
         )
 
     def place_tile(tile, x, y):
@@ -128,9 +127,7 @@ def construct(tiles):
         used.add(tile.id)
         placed[(x, y)] = tile
 
-        for border, edge in zip(
-            Border, (tile.top, tile.right, tile.bottom, tile.left)
-        ):
+        for border, edge in zip(Border, (tile.top, tile.right, tile.bottom, tile.left)):
             if border is Border.TOP:
                 if (tile := find_tile(Border.BOTTOM, edge)) is not None:
                     place_tile(tile, x, y - 1)
@@ -187,9 +184,7 @@ def reorder(tiles):
 
 
 def merge(tiles):
-    return tuple(
-        tuple(chain(*row)) for tile_row in tiles for row in zip(*tile_row)
-    )
+    return tuple(tuple(chain(*row)) for tile_row in tiles for row in zip(*tile_row))
 
 
 def hash_count(tile):
@@ -227,9 +222,7 @@ def multiline_match_count(pattern, lines):
 
 
 def pattern_count(pattern, tile):
-    return sum(
-        multiline_match_count(pattern, tile[row:]) for row in range(len(tile))
-    )
+    return sum(multiline_match_count(pattern, tile[row:]) for row in range(len(tile)))
 
 
 def find_patterns(pattern, image):
@@ -243,8 +236,7 @@ def find_patterns(pattern, image):
 def part_2(input):
     positions = construct(parse(input))
     image = merge(
-        (trim(tile.tile) for tile in tile_row)
-        for tile_row in reorder(positions)
+        (trim(tile.tile) for tile in tile_row) for tile_row in reorder(positions)
     )
     total_hashes = hash_count(image)
     monster_hashes = hash_count(SEA_MONSTER)
