@@ -1,5 +1,5 @@
 import re
-from collections import defaultdict
+from collections import Counter
 from itertools import chain
 
 ENTRY_RE = re.compile(r"(.+) \(contains (.+)\)")
@@ -27,11 +27,7 @@ def candidates(entries):
 
 
 def occurences(entries):
-    result = defaultdict(int)
-    for ingredients, _ in entries:
-        for ingredient in ingredients:
-            result[ingredient] += 1
-    return result
+    return Counter(chain(*(ingredients for ingredients, _ in entries)))
 
 
 def part_1(input):
