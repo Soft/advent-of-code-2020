@@ -1,12 +1,14 @@
 from __future__ import annotations
-from itertools import cycle, islice
+
 from dataclasses import dataclass
+from itertools import chain, cycle, islice
+from typing import Optional
 
 
 @dataclass
 class Node:
     value: int
-    next: Node
+    next: Optional[Node]
 
     def __repr__(self):
         return "Node(value={}, next={})".format(
@@ -28,7 +30,7 @@ def sliding_pairs(iterable):
 
 def build_nodes(nums):
     nodes = {n: Node(n, None) for n in nums}
-    for p, n in sliding_pairs(islice(cycle(nums), 0, len(nums) + 1)):
+    for p, n in sliding_pairs(islice(cycle(nodes), 0, len(nodes) + 1)):
         nodes[p].next = nodes[n]
     return nodes
 
@@ -79,3 +81,10 @@ def part_1(input):
     nums = parse(input)
     nodes = play(build_nodes(nums), nums[0], 100)
     print("".join(map(str, loop_around(nodes, 1))))
+
+
+def part_2(input):
+    nums = parse(input)
+    nodes = build_nodes(chain(nums, range(max(nums) + 1, 1_000_000 + 1)))
+    play(nodes, nums[0], 10_000_000)
+    print(nodes[1].next.value * nodes[1].next.next.value)
